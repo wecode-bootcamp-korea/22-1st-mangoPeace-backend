@@ -29,7 +29,7 @@ class SubCategory(Model):
 class Restaurant(TimeStampModel):
     sub_category = ForeignKey(SubCategory, on_delete=PROTECT, related_name="restaurants")
     name         = CharField(max_length=45)
-    address      = CharField(max_length=200, unique=True)
+    address      = CharField(max_length=200)
     phone_number = CharField(max_length=20, unique=True)
     coordinate   = JSONField()
     open_time    = CharField(max_length=100)
@@ -47,7 +47,7 @@ class Food(TimeStampModel):
 
 class Image(Model):
     food      = ForeignKey(Food, on_delete=CASCADE)
-    image_url = URLField()
+    image_url = URLField(max_length=2000)
 
     class Meta():
         db_table = "food_images"
