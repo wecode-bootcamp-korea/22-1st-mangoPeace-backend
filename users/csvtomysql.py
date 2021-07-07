@@ -24,7 +24,6 @@ with open(CSV_PATH, encoding="utf8", mode="r") as csvfile:
     csv_reader = csv.DictReader(csvfile)
     for row in csv_reader:
 
-
 # 메뉴 만들기 (다음을 위해서. 3명의 변태들 .)
 
         if not Menu.objects.filter(name=row["menu"]).exists():
