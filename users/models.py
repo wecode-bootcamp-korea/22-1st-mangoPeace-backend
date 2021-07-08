@@ -18,8 +18,8 @@ class User(TimeStampModel):
         db_table = "users"
 
 class Wishlist(TimeStampModel):
-    user                = ForeignKey(User, on_delete=CASCADE)
-    restaurant          = ForeignKey(Restaurant, on_delete=CASCADE)
+    user        = ForeignKey(User, on_delete=CASCADE)
+    restaurant  = ForeignKey(Restaurant, on_delete=CASCADE)
 
     class Meta():
         db_table        = "wishlists"
