@@ -6,14 +6,11 @@ from json.decoder import JSONDecodeError
 from django.http import JsonResponse
 from django.views import View
 from django.db.utils import DataError
+from django.utils import timezone
 
 from users.utils import ConfirmUser
 from users.models import Review
 from restaurants.models import Food, Image, Restaurant
-
-# ? : restaurant 생성 로직. 사이트에서 누군가는 Restaurant를 생성해야 하지 않을까? 최소한 관리자는.
-# ? : review의 유저정보에는 그 유저가 쓴 리뷰의 갯수와 이름 모를 게 하나 있다.
-# ? : image. image의 url만 넣으면 끝인건가?
 
 class RestaurantView(View):
     def get(self, request, restaurant_id):
@@ -38,11 +35,10 @@ class RestaurantView(View):
         reviews_queryset = Review.objects.filter(restaurant=restaurant_instance)
         
         for r in reviews_queryset:
-            print(r)
             review = {
                 "user":{
                     "full_name":r.user.full_name,
-                    "profile_image":r.user.profile_image,
+                    "profile_image":r.user.profile_image if hasattr(r.user, "profile_image") else None,
                     # 리뷰 갯수
                     # ? 아무튼 갯수. 친구수인가 스토리 수인가. 
                 },
@@ -64,12 +60,11 @@ class RestaurantView(View):
             "reviews":reviews,
         }
 
-        print(restaurant)
 
         return JsonResponse({"message":"success", "result":restaurant}, status=200)
 
 
-class ReviewView(View):
+class CreateReviewView(View):
     @ConfirmUser
     def post(self, request, restaurant_id):
         try:
@@ -100,6 +95,70 @@ class ReviewView(View):
 
         except DataError:
             return JsonResponse({"message":"DATA_ERROR"}, status=400)
+
+        except Exception as e:
+            print(e)
+            print(e.__class__)
+            return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
+
+class ReviewView(View):
+    @ConfirmUser
+    def put(self, request, review_id):
+        try:
+            data = json.loads(request.body)
+            content = data["content"]
+            rating = data["rating"]
+            review_queryset = Review.objects.filter(id=review_id)
+            
+            review_queryset.update(content=content, rating=rating, updated_at=timezone.now())
+
+            return JsonResponse({"message":"success"}, status=201)
+
+        except JSONDecodeError:
+            return JsonResponse({"message":"JSON_DECODE_ERROR"}, status=400)
+
+        except DataError:
+            return JsonResponse({"message":"DATA_ERROR"}, status=400)
+
+        except Exception as e:
+            print(e)
+            print(e.__class__)
+            return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
+
+    @ConfirmUser
+    def delete(self, request, review_id):
+        try:
+            review_instance = Review.objects.get(id=review_id)
+            
+            review_instance.delete()
+
+            return JsonResponse({"message":"success"}, status=201)
+
+        except JSONDecodeError:
+            return JsonResponse({"message":"JSON_DECODE_ERROR"}, status=400)
+
+        except DataError:
+            return JsonResponse({"message":"DATA_ERROR"}, status=400)
+
+        except Exception as e:
+            print(e)
+            print(e.__class__)
+            return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
+
+class WishListView(View):
+    @ConfirmUser
+    def post(self, request, restaurant_id):
+        try:
+            user_instance = request.user
+            restaurant_instance = Restaurant.objects.get(id=restaurant_id)
+            is_wished = user_instance.wishlist_restaurants.filter(id=restaurant_id).exists()
+
+            if is_wished:
+                user_instance.wishlist_restaurants.remove(restaurant_instance)
+            else:
+                user_instance.wishlist_restaurants.add(restaurant_instance)
+
+            return JsonResponse({"message":"success"}, status=201)
 
         except Exception as e:
             print(e)

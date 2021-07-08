@@ -1,7 +1,7 @@
 import re
 
 def validate_full_name(arg):
-    full_name_regex = re.compile(r'[a-zA-Z가-힇]{2,}')
+    full_name_regex = re.compile(r'^[a-zA-Z가-힇]{2,}$')
     return full_name_regex.match(arg)
 
 def validate_email(arg):

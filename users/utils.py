@@ -8,9 +8,6 @@ from jwt.exceptions import ExpiredSignatureError, InvalidSignatureError, DecodeE
 import my_settings
 from users.models import User
 
-# ? :  이 로직으로 충분한가?
-# ? : 로그아웃은 어디서 시켜주는거지?
-
 class ConfirmUser:
     def __init__(self, func):
         self.func = func
