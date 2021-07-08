@@ -60,7 +60,7 @@ class SignupView(View):
         except Exception:
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
 
-class SignInView(View):
+class SigninView(View):
     def post(self,request):
         try:
             data     = json.loads(request.body)
