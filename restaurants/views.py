@@ -33,7 +33,7 @@ class RestaurantView(View):
         except Exception as e:
             print(e)
             print(e.__class__)
-            return JsonResponse({"message":e}, status=400)
+            return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
 
 class RestaurantFoodView(View):
     def get(self, request, restaurant_id):
@@ -59,7 +59,7 @@ class RestaurantFoodView(View):
         except Exception as e:
             print(e)
             print(e.__class__)
-            return JsonResponse({"message":e}, status=400)
+            return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
 
 class RestaurantReviewView(View):
     def get(self, request, restaurant_id):
@@ -90,7 +90,7 @@ class RestaurantReviewView(View):
         except Exception as e:
             print(e)
             print(e.__class__)
-            return JsonResponse({"message":e}, status=400)
+            return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
 
     # @ConfirmUser
     def post(self, request, restaurant_id):
