@@ -19,7 +19,7 @@ from users.models           import User
 class SignupView(View):
     def post(self, request):
         try:
-            data         = json.loads(request.body)
+            data = json.loads(request.body)
 
             if not User.validate(data):
                 raise ValidationError(message=None)
@@ -27,7 +27,7 @@ class SignupView(View):
             hashed_password  = bcrypt.hashpw(data["password"].encode("utf-8"), bcrypt.gensalt())
 
             User.objects.create(
-                full_name    = data["full_name"],
+                nick_name    = data["nick_name"],
                 email        = data["email"],
                 password     = hashed_password.decode(),
                 phone_number = data["phone_number"],
@@ -38,7 +38,8 @@ class SignupView(View):
         except JSONDecodeError:
             return JsonResponse({"message":"JSON_DECODE_ERROR"}, status=400)        
         
-        except KeyError:
+        except KeyError as e:
+            print(e)
             return JsonResponse({"message":"KEY_ERROR"}, status=400)
 
         except ValidationError:
