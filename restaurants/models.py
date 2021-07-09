@@ -1,6 +1,6 @@
 from django.db.models.base           import Model
 from django.db.models.deletion       import CASCADE, PROTECT
-from django.db.models.fields         import CharField, DateTimeField, DecimalField, URLField
+from django.db.models.fields         import CharField, DecimalField, URLField
 from django.db.models.fields.json    import JSONField
 from django.db.models.fields.related import ForeignKey
 

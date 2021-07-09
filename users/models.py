@@ -1,3 +1,4 @@
+from users.validation import validate_email, validate_full_name, validate_password, validate_phone_number
 from django.db.models.deletion       import CASCADE
 from django.db.models.fields         import CharField, DateTimeField, DecimalField, TextField, URLField
 from django.db.models.fields.related import ForeignKey, ManyToManyField
@@ -13,6 +14,22 @@ class User(TimeStampModel):
     profile_url          = URLField(null=True)
     wishlist_restaurants = ManyToManyField(Restaurant, through="Wishlist", related_name="wishlist_user")
     reviewed_restaurants = ManyToManyField(Restaurant, through="Review", related_name="reviewed_user")
+
+    @classmethod
+    def validate(cls, data):
+        if not validate_email(data["email"]):
+            return False
+        
+        if not validate_full_name(data["full_name"]):
+            return False
+        
+        if not validate_password(data["password"]):
+            return False
+        
+        if not validate_phone_number(data["phone_number"]):
+            return False
+        
+        return True
 
     class Meta():
         db_table = "users"

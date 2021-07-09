@@ -1,4 +1,4 @@
->wecode PR message template 및 체크 리스트 입니다. 
+> wecode PR message template 및 체크 리스트 입니다. 
 아래 사항들을 전부 작성/체크 하시고 PR 해주세요!
 
 ## 수정 사항 간략한 한줄 요약

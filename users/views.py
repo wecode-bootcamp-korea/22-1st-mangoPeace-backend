@@ -12,36 +12,25 @@ from json.decoder           import JSONDecodeError
 import my_settings
 
 from users.models           import User
-from users.validation       import validate_email, validate_full_name, validate_password, validate_phone_number
+
+# 유저 위시리스트는 다른 View에다 해야함.
+# 토큰 유효기간 하고 싶다.
 
 class SignupView(View):
     def post(self, request):
         try:
             data         = json.loads(request.body)
-            full_name    = data["full_name"]
-            email        = data["email"]
-            password     = data["password"]
-            phone_number = data["phone_number"]
 
-            if not validate_full_name(full_name):
+            if not User.validate(data):
                 raise ValidationError(message=None)
 
-            if not validate_email(email):
-                raise ValidationError(message=None)
-
-            if not validate_password(password):
-                raise ValidationError(message=None)
-
-            if not validate_phone_number(phone_number):
-                raise ValidationError(message=None)
-
-            hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+            hashed_password  = bcrypt.hashpw(data["password"].encode("utf-8"), bcrypt.gensalt())
 
             User.objects.create(
-                full_name    = full_name,
-                email        = email,
+                full_name    = data["full_name"],
+                email        = data["email"],
                 password     = hashed_password.decode(),
-                phone_number = phone_number,
+                phone_number = data["phone_number"],
                 )
 
             return JsonResponse({"message":"success"}, status=201)
@@ -58,7 +47,9 @@ class SignupView(View):
         except IntegrityError:
             return JsonResponse({"message":"INTEGRITY_ERROR"}, status=400)
 
-        except Exception:
+        except Exception as e:
+            print(e)
+            print(e.__class__)
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
 
 class SignInView(View):
@@ -67,7 +58,6 @@ class SignInView(View):
             data     = json.loads(request.body)
             email    = data["email"]
             password = data["password"]
-
             user              = User.objects.get(email=email)
             is_password_match = bcrypt.checkpw(password.encode(), user.password.encode())
             
@@ -87,6 +77,9 @@ class SignInView(View):
 
             return JsonResponse({"message":"success", "access_token":access_token}, status=200)
 
+        except User.DoesNotExist:
+            return JsonResponse({"message":"USER_NOT_EXIST"}, status=400)        
+
         except JSONDecodeError:
             return JsonResponse({"message":"JSON_DECODE_ERROR"}, status=400)        
         
@@ -96,7 +89,9 @@ class SignInView(View):
         except ValidationError:
             return JsonResponse({"message":"VALIDATION_ERROR"}, status=400)        
 
-        except Exception:
+        except Exception as e:
+            print(e)
+            print(e.__class__)
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
 
 class UserView(View):
