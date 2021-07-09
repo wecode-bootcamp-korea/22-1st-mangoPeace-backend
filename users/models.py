@@ -1,4 +1,4 @@
-from users.validation import validate_email, validate_full_name, validate_password, validate_phone_number
+from users.validation import validate_email, validate_nickname, validate_password, validate_phone_number
 from django.db.models.deletion       import CASCADE
 from django.db.models.fields         import CharField, DateTimeField, DecimalField, TextField, URLField
 from django.db.models.fields.related import ForeignKey, ManyToManyField
@@ -7,7 +7,7 @@ from restaurants.models              import Restaurant
 from mangoPeace.common               import TimeStampModel
 
 class User(TimeStampModel):
-    full_name            = CharField(max_length=45)
+    nickname            = CharField(max_length=45)
     email                = CharField(max_length=200, unique=True)
     password             = CharField(max_length=200)
     phone_number         = CharField(max_length=20, unique=True, null=True)
@@ -20,7 +20,7 @@ class User(TimeStampModel):
         if not validate_email(data["email"]):
             return False
         
-        if not validate_full_name(data["full_name"]):
+        if not validate_nickname(data["nickname"]):
             return False
         
         if not validate_password(data["password"]):
