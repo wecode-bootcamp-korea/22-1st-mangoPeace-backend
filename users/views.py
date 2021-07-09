@@ -1,6 +1,7 @@
 import json
 import bcrypt
 import jwt
+import datetime
 
 from django.views           import View
 from django.http            import JsonResponse
@@ -22,28 +23,18 @@ class SignupView(View):
             data = json.loads(request.body)
 
             if not User.validate(data):
-                raise ValidationError(message=None)
+                return JsonResponse({"message":"VALIDATION_ERROR"}, status=401)        
 
-            hashed_password  = bcrypt.hashpw(data["password"].encode("utf-8"), bcrypt.gensalt())
-
-            User.objects.create(
-                nick_name    = data["nick_name"],
-                email        = data["email"],
-                password     = hashed_password.decode(),
-                phone_number = data["phone_number"],
-                )
-
-            return JsonResponse({"message":"success"}, status=201)
+            nickname     = data["nickname"]
+            email        = data["email"]
+            password     = data["password"]
+            phone_number = data["phone_number"]
 
         except JSONDecodeError:
             return JsonResponse({"message":"JSON_DECODE_ERROR"}, status=400)        
         
-        except KeyError as e:
-            print(e)
+        except KeyError:
             return JsonResponse({"message":"KEY_ERROR"}, status=400)
-
-        except ValidationError:
-            return JsonResponse({"message":"VALIDATION_ERROR"}, status=401)        
 
         except IntegrityError:
             return JsonResponse({"message":"INTEGRITY_ERROR"}, status=400)
@@ -53,25 +44,32 @@ class SignupView(View):
             print(e.__class__)
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
 
+        else:
+            hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+
+            User.objects.create(
+            nickname     = nickname,
+            email        = email,
+            password     = hashed_password.decode(),
+            phone_number = phone_number,
+            )
+
+            return JsonResponse({"message":"success"}, status=201)
+
 class SignInView(View):
     def post(self,request):
         try:
             data     = json.loads(request.body)
             email    = data["email"]
             password = data["password"]
-            user              = User.objects.get(email=email)
-            is_password_match = bcrypt.checkpw(password.encode(), user.password.encode())
+            user     = User.objects.get(email=email)
             
-            if not is_password_match:
-                raise ValidationError(message=None)
+            if not bcrypt.checkpw(password.encode(), user.password.encode()):
+                return JsonResponse({"message":"VALIDATION_ERROR"}, status=400)        
 
-            # 토큰 유효기간 테스트 중
-            # current_time = datetime.datetime.now()
-            # five_hours = datetime.timedelta(hours=1)
-            # exp = current_time + five_hours
-
+            exp           = datetime.datetime.now() + datetime.timedelta(hours=24)
             access_token  = jwt.encode(
-                payload   = {"id" : user.id},
+                payload   = {"id" : user.id, "exp" : exp},
                 key       = my_settings.SECRET_KEY,
                 algorithm = my_settings.ALGORITHM
             )
@@ -86,9 +84,6 @@ class SignInView(View):
         
         except KeyError:
             return JsonResponse({"message":"KEY_ERROR"}, status=400)        
-
-        except ValidationError:
-            return JsonResponse({"message":"VALIDATION_ERROR"}, status=400)        
 
         except Exception as e:
             print(e)
