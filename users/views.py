@@ -67,15 +67,6 @@ class SignInView(View):
             if not bcrypt.checkpw(password.encode(), user.password.encode()):
                 return JsonResponse({"message":"VALIDATION_ERROR"}, status=400)        
 
-            exp           = datetime.datetime.now() + datetime.timedelta(hours=24)
-            access_token  = jwt.encode(
-                payload   = {"id" : user.id, "exp" : exp},
-                key       = my_settings.SECRET_KEY,
-                algorithm = my_settings.ALGORITHM
-            )
-
-            return JsonResponse({"message":"success", "access_token":access_token}, status=200)
-
         except User.DoesNotExist:
             return JsonResponse({"message":"USER_NOT_EXIST"}, status=400)        
 
@@ -89,6 +80,16 @@ class SignInView(View):
             print(e)
             print(e.__class__)
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
+        
+        else:
+            exp           = datetime.datetime.now() + datetime.timedelta(hours=24)
+            access_token  = jwt.encode(
+                payload   = {"id" : user.id, "exp" : exp},
+                key       = my_settings.SECRET_KEY,
+                algorithm = my_settings.ALGORITHM
+            )
+
+            return JsonResponse({"message":"success", "access_token":access_token}, status=200)
 
 class UserView(View):
     def get(self, request):

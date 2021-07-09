@@ -12,28 +12,36 @@ from users.utils import ConfirmUser
 from users.models import Review, User
 from restaurants.models import Food, Image, Restaurant
 
-class RestaurantView(View):
+class RestaurantDetailView(View):
     def get(self, request, restaurant_id):
         try:
             restaurant_instance = Restaurant.objects.get(id=restaurant_id)
-
-            restaurant = {
-                "id":restaurant_instance.id,
-                "sub_category": restaurant_instance.sub_category.name,
-                "name": restaurant_instance.name,
-                "address": restaurant_instance.address,
-                "phone_number": restaurant_instance.phone_number,
-                "coordinate": restaurant_instance.coordinate,
-                "open_time": restaurant_instance.open_time,
-                "updated_at": restaurant_instance.updated_at,
-            }
-
-            return JsonResponse({"message":"success", "result":restaurant}, status=200)
+            # 임시 유저 
+            fake_user_instance = User.objects.get(id=1)
+            is_wished = fake_user_instance.wishlist_restaurants.filter(id=restaurant_id).exists()
+ 
+        except Restaurant.DoesNotExist:
+            return JsonResponse({"message":"RESTAURANT_NOT_EXIST"}, status=400)        
         
         except Exception as e:
             print(e)
             print(e.__class__)
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
+        
+        else:
+            restaurant = {
+            "id":restaurant_instance.id,
+            "sub_category": restaurant_instance.sub_category.name,
+            "name": restaurant_instance.name,
+            "address": restaurant_instance.address,
+            "phone_number": restaurant_instance.phone_number,
+            "coordinate": restaurant_instance.coordinate,
+            "open_time": restaurant_instance.open_time,
+            "updated_at": restaurant_instance.updated_at,
+            "is_wished" : is_wished
+        }
+
+            return JsonResponse({"message":"success", "result":restaurant}, status=200)
 
 class RestaurantFoodView(View):
     def get(self, request, restaurant_id):
@@ -68,12 +76,10 @@ class RestaurantReviewView(View):
             reviews_queryset = Restaurant.objects.get(id=restaurant_id).review_set.all()
             
             for r in reviews_queryset:
-                print(type(r.id))
-                print(type(r.rating))
                 review = {
                     "user":{
                         "id":r.user.id,
-                        "full_name":r.user.full_name,
+                        "nickname":r.user.nickname,
                         "profile_image":r.user.profile_url if hasattr(r.user, "profile_url") else None,
                         # 리뷰 갯수
                         # ? 아무튼 갯수. 친구수인가 스토리 수인가. 
@@ -174,16 +180,24 @@ class WishListView(View):
             # user_instance = request.user
             user_instance = User.objects.get(id=1)
             restaurant_instance = Restaurant.objects.get(id=restaurant_id)
-            is_wished = user_instance.wishlist_restaurants.filter(id=restaurant_id).exists()
+            user_instance.wishlist_restaurants.add(restaurant_instance)
 
-            if is_wished:
-                user_instance.wishlist_restaurants.remove(restaurant_instance)
-                status_code = 200
-            else:
-                user_instance.wishlist_restaurants.add(restaurant_instance)
-                status_code = 201
+            return JsonResponse({"message":"success"}, status=201)
 
-            return JsonResponse({"message":"success"}, status=status_code)
+        except Exception as e:
+            print(e)
+            print(e.__class__)
+            return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
+
+    def delete(self, request, restaurant_id):
+        try:
+            # token에 대한 유저
+            # user_instance = request.user
+            user_instance = User.objects.get(id=1)
+            restaurant_instance = Restaurant.objects.get(id=restaurant_id)
+            user_instance.wishlist_restaurants.remove(restaurant_instance)
+
+            return JsonResponse({"message":"success"}, status=204)
 
         except Exception as e:
             print(e)
