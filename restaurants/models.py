@@ -46,7 +46,7 @@ class Food(TimeStampModel):
         db_table = "foods"
 
 class Image(Model):
-    food      = ForeignKey(Food, on_delete=CASCADE)
+    food      = ForeignKey(Food, on_delete=CASCADE, related_name="images")
     image_url = URLField(max_length=2000)
 
     class Meta():
