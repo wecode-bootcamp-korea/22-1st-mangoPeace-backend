@@ -139,11 +139,13 @@ class RestaurantReviewView(View):
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
     
     # @ConfirmUser
-    def patch(self, request, review_id):
+    def patch(self, request, restaurant_id):
         try:
             data = json.loads(request.body)
             content = data["content"]
             rating = data["rating"]
+            review_id = data["review_id"]
+            print(review_id)
             review_queryset = Review.objects.filter(id=review_id)
             
             review_queryset.update(content=content, rating=rating, updated_at=timezone.now())
@@ -162,8 +164,10 @@ class RestaurantReviewView(View):
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
 
     # @ConfirmUser
-    def delete(self, request, review_id):
+    def delete(self, request, restaurant_id):
         try:
+            data = json.loads(request.body)
+            review_id = data["review_id"]
             review_instance = Review.objects.get(id=review_id)
             
             review_instance.delete()
