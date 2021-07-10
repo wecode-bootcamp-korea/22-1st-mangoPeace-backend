@@ -2,11 +2,13 @@ import json
 import jwt
 
 from json.decoder import JSONDecodeError
+from decimal      import Decimal
 
 from django.http import JsonResponse
 from django.views import View
 from django.db.utils import DataError
 from django.utils import timezone
+from django.db.models import Avg
 
 from users.utils import ConfirmUser
 from users.models import Review, User
@@ -16,10 +18,10 @@ class RestaurantDetailView(View):
     def get(self, request, restaurant_id):
         try:
             restaurant_instance = Restaurant.objects.get(id=restaurant_id)
-            # 임시 유저 
+            # 임시 유저. 원래는 토큰으로.  
             fake_user_instance = User.objects.get(id=1)
             is_wished = fake_user_instance.wishlist_restaurants.filter(id=restaurant_id).exists()
- 
+
         except Restaurant.DoesNotExist:
             return JsonResponse({"message":"RESTAURANT_NOT_EXIST"}, status=400)        
         
@@ -47,7 +49,7 @@ class RestaurantFoodView(View):
     def get(self, request, restaurant_id):
         try:
             foods = []
-            foods_queryset = Restaurant.objects.get(id=restaurant_id).food_set.all()
+            foods_queryset = Restaurant.objects.get(id=restaurant_id).foods.all()
             
             for food_instance in foods_queryset:
                 images = []
@@ -72,26 +74,35 @@ class RestaurantFoodView(View):
 class RestaurantReviewView(View):
     def get(self, request, restaurant_id):
         try:
-            reviews = []
             reviews_queryset = Restaurant.objects.get(id=restaurant_id).review_set.all()
+            average          = reviews_queryset.aggregate(Avg("rating"))["rating__avg"]
+            print(average)
+            print(type(average))
             
-            for r in reviews_queryset:
+            reviews          = []
+
+            for review_instance in reviews_queryset:
                 review = {
                     "user":{
-                        "id":r.user.id,
-                        "nickname":r.user.nickname,
-                        "profile_image":r.user.profile_url if hasattr(r.user, "profile_url") else None,
-                        # 리뷰 갯수
-                        # ? 아무튼 갯수. 친구수인가 스토리 수인가. 
+                        "id":review_instance.user.id,
+                        "nickname":review_instance.user.nickname,
+                        "profile_image":review_instance.user.profile_url if hasattr(review_instance.user, "profile_url") else None,
+                        "review_count":review_instance.user.reviewed_restaurants.count()
                     },
-                    "id":r.id,
-                    "content" : r.content,
-                    "rating":r.rating,
-                    "created_at":r.created_at,
+                    "id":review_instance.id,
+                    "content" : review_instance.content,
+                    "rating":review_instance.rating,
+                    "created_at":review_instance.created_at,
                 }
                 reviews.append(review)
 
-            return JsonResponse({"message":"success", "result":reviews}, status=200)
+            result = {
+                "average" : average,
+                "reviews" : reviews,
+                "my_int" : 1
+            }
+
+            return JsonResponse({"message":"success", "result":result}, status=200)
 
         except Exception as e:
             print(e)
@@ -176,12 +187,21 @@ class WishListView(View):
     # @ConfirmUser
     def post(self, request, restaurant_id):
         try:
+            print(request)
             # token에 대한 유저
             # user_instance = request.user
+            # 1. 1번 유저
             user_instance = User.objects.get(id=1)
+            # 2. 레스토랑 가져오기
             restaurant_instance = Restaurant.objects.get(id=restaurant_id)
-            user_instance.wishlist_restaurants.add(restaurant_instance)
-
+            # 3. DB에 없으면, 추가.
+            if not user_instance.wishlist_restaurants.all().exists():
+                user_instance.wishlist_restaurants.add(restaurant_instance)
+            # 이미 있으면, 에러 던짐
+            else:
+                return JsonResponse({"message":"ALREADY_EXISTS"}, status=400)
+            
+            # 4. 정상 : success 
             return JsonResponse({"message":"success"}, status=201)
 
         except Exception as e:
@@ -191,12 +211,17 @@ class WishListView(View):
 
     def delete(self, request, restaurant_id):
         try:
+            print(request)
             # token에 대한 유저
             # user_instance = request.user
             user_instance = User.objects.get(id=1)
             restaurant_instance = Restaurant.objects.get(id=restaurant_id)
-            user_instance.wishlist_restaurants.remove(restaurant_instance)
-
+            if user_instance.wishlist_restaurants.all().exists():
+                user_instance.wishlist_restaurants.remove(restaurant_instance)
+            # 없는데 delete를 할ㄹ라고 한다? 너 나빴어!
+            else:
+                return JsonResponse({"message":"NOT_EXISTS"}, status=400)
+            # 정상 : success    
             return JsonResponse({"message":"success"}, status=204)
 
         except Exception as e:

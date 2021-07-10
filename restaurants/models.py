@@ -23,7 +23,7 @@ class SubCategory(Model):
     category = ForeignKey(Category, on_delete=PROTECT, related_name="sub_categories")
     name     = CharField(max_length=45, unique=True)
 
-    class Meta():
+    class Meta(): 
         db_table = "sub_categories"
 
 class Restaurant(TimeStampModel):
@@ -38,7 +38,7 @@ class Restaurant(TimeStampModel):
         db_table = "restaurants"
 
 class Food(TimeStampModel):
-    restaurant = ForeignKey(Restaurant, on_delete=CASCADE)
+    restaurant = ForeignKey(Restaurant, on_delete=CASCADE, related_name="foods")
     name       = CharField(max_length=45)
     price      = DecimalField(max_digits=10, decimal_places=2)
 

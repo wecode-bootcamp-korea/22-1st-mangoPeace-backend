@@ -1,13 +1,13 @@
 from users.validation import validate_email, validate_nickname, validate_password, validate_phone_number
 from django.db.models.deletion       import CASCADE
-from django.db.models.fields         import CharField, DateTimeField, DecimalField, TextField, URLField
+from django.db.models.fields         import CharField, DecimalField, TextField, URLField
 from django.db.models.fields.related import ForeignKey, ManyToManyField
 
 from restaurants.models              import Restaurant
 from mangoPeace.common               import TimeStampModel
 
 class User(TimeStampModel):
-    nickname            = CharField(max_length=45)
+    nickname             = CharField(max_length=45)
     email                = CharField(max_length=200, unique=True)
     password             = CharField(max_length=200)
     phone_number         = CharField(max_length=20, unique=True, null=True)
