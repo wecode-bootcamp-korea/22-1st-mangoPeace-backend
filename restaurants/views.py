@@ -76,9 +76,6 @@ class RestaurantReviewView(View):
         try:
             reviews_queryset = Restaurant.objects.get(id=restaurant_id).review_set.all()
             average          = reviews_queryset.aggregate(Avg("rating"))["rating__avg"]
-            print(average)
-            print(type(average))
-            
             reviews          = []
 
             for review_instance in reviews_queryset:
@@ -113,12 +110,13 @@ class RestaurantReviewView(View):
     def post(self, request, restaurant_id):
         try:
             data = json.loads(request.body)
-            # token에 대한 유저
             # user_instance = request.user
+            # 임시유저
             user_instance = User.objects.get(id=1)
             restaurant_instance = Restaurant.objects.get(id=restaurant_id)
             content = data["content"]
             rating = data["rating"]
+            print(content, rating)
 
             Review.objects.create(
                 user=user_instance,
