@@ -1,4 +1,5 @@
 import json
+from users.utils import ConfirmUser
 import bcrypt
 import jwt
 import datetime
@@ -88,15 +89,10 @@ class SignInView(View):
 
             return JsonResponse({"message":"success", "access_token":access_token}, status=200)
 
+@ConfirmUser
 class UserView(View):
     def get(self, request):
-        access_token = request.headers["Authorization"]
-        user_id = jwt.decode(
-            jwt=access_token,
-            key=my_settings.SECRET_KEY,
-            algorithms=my_settings.ALGORITHM
-            )["id"]
-        user_instance = User.objects.get(id=user_id)
+        user_instance = request.user 
         wish_list = []
         wish_list_queryset = user_instance.wishlist_restaurants.all()
         print(wish_list_queryset)

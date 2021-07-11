@@ -14,7 +14,7 @@ class ConfirmUser:
     
     def __call__(self, request, *args, **kwargs):
         try:
-            token   = request.headers.get("Authorization")
+            token         = request.headers.get("Authorization")
             decoded_token = jwt.decode(jwt=token, key=my_settings.SECRET_KEY,  algorithms=my_settings.ALGORITHM)
 
             if not decoded_token :
