@@ -94,9 +94,8 @@ class RestaurantReviewView(View):
         try:
             UNIT_PER_PAGE = 5
             limit            = int(request.GET.get("limit", 1)) * UNIT_PER_PAGE
-            rating_min = request.GET.get("rating_min", 0)
-            rating_max = request.GET.get("rating_max", 5)
-
+            rating_min = request.GET.get("rating-min", 0)
+            rating_max = request.GET.get("rating-max", 5)
             
             restaurant_instance = Restaurant.objects.get(id=restaurant_id)
             

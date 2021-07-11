@@ -19,6 +19,7 @@ class SignupView(View):
     def post(self, request):
         try:
             data = json.loads(request.body)
+            print(data)
 
             if not User.validate(data):
                 return JsonResponse({"message":"VALIDATION_ERROR"}, status=401)        
@@ -27,7 +28,16 @@ class SignupView(View):
             email        = data["email"]
             password     = data["password"]
             phone_number = data["phone_number"]
+            hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
 
+            User.objects.create(
+            nickname     = nickname,
+            email        = email,
+            password     = hashed_password.decode(),
+            phone_number = phone_number,
+            )
+
+            return JsonResponse({"message":"success"}, status=201)
         except JSONDecodeError:
             return JsonResponse({"message":"JSON_DECODE_ERROR"}, status=400)        
         
@@ -42,17 +52,6 @@ class SignupView(View):
             print(e.__class__)
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
 
-        else:
-            hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
-
-            User.objects.create(
-            nickname     = nickname,
-            email        = email,
-            password     = hashed_password.decode(),
-            phone_number = phone_number,
-            )
-
-            return JsonResponse({"message":"success"}, status=201)
 
 class SignInView(View):
     def post(self,request):
@@ -89,20 +88,20 @@ class SignInView(View):
 
             return JsonResponse({"message":"success", "access_token":access_token}, status=200)
 
-@ConfirmUser
+# @ConfirmUser
 class UserView(View):
     def get(self, request):
         user_instance = request.user 
-        wish_list = []
+        wish_list     = []
         wish_list_queryset = user_instance.wishlist_restaurants.all()
-        print(wish_list_queryset)
-        for w in wish_list_queryset:
-            print(w)
+
+        for wish in wish_list_queryset:
+            wish_list.append(wish)
+
         user = {
             "nickname":user_instance.nickname,
             "email":user_instance.email,
             "profile_url":user_instance.profile_url,
         }
-        print(user)
         
         return JsonResponse({"message":"success","result":user}, status=200)
