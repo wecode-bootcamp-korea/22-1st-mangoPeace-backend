@@ -1,10 +1,9 @@
 from django.urls import path
 
-from restaurants.views import CreateReviewView, RestaurantView, ReviewView, WishListView
+from restaurants.views import MainListView, RestaurantListView, HighListView
 
 urlpatterns = [
-    path("/<int:restaurant_id>", RestaurantView.as_view()),
-    path("/<int:restaurant_id>/review", CreateReviewView.as_view()),
-    path("/<int:restaurant_id>/wishlist", WishListView.as_view()),
-    path("/review/<int:review_id>", ReviewView.as_view()),
+    path("/sub_categories/<int:sub_category_id>/list", RestaurantListView.as_view()),
+    path("/categories/<int:category_id>/mainlist", MainListView.as_view()),
+    path("/<int:restaurant_id>/high_ratings", HighListView.as_view())
 ]

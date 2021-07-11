@@ -28,12 +28,10 @@ class SignupView(View):
     def post(self, request):
         try:
             data = json.loads(request.body)
-            print(data)
             full_name = data["full_name"]
             email = data["email"]
             password = data["password"]
             phone_number = data["phone_number"]
-            print(phone_number)
             # profile_url = data["profile_url"] if data.get("profile_url") else None
 
             if not validate_full_name(full_name):
