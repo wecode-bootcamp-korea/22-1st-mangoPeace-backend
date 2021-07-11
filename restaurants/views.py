@@ -1,4 +1,5 @@
 import json
+from re import UNICODE
 import jwt
 
 from json.decoder import JSONDecodeError
@@ -22,6 +23,10 @@ class RestaurantDetailView(View):
             fake_user_instance = User.objects.get(id=1)
             is_wished = fake_user_instance.wishlist_restaurants.filter(id=restaurant_id).exists()
 
+            reviews_queryset = Restaurant.objects.get(id=restaurant_id).review_set.all()
+            average_rating   = reviews_queryset.aggregate(Avg("rating"))["rating__avg"]
+            review_count     = Restaurant.objects.get(id=restaurant_id).review_set.all().count()
+
         except Restaurant.DoesNotExist:
             return JsonResponse({"message":"RESTAURANT_NOT_EXIST"}, status=400)        
         
@@ -31,7 +36,7 @@ class RestaurantDetailView(View):
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
         
         else:
-            restaurant = {
+            result = {
             "id":restaurant_instance.id,
             "sub_category": restaurant_instance.sub_category.name,
             "name": restaurant_instance.name,
@@ -40,22 +45,29 @@ class RestaurantDetailView(View):
             "coordinate": restaurant_instance.coordinate,
             "open_time": restaurant_instance.open_time,
             "updated_at": restaurant_instance.updated_at,
-            "is_wished" : is_wished
+            "is_wished" : is_wished,
+            "review_count" : review_count,
+            "average_rating" : average_rating,
         }
 
-            return JsonResponse({"message":"success", "result":restaurant}, status=200)
+            return JsonResponse({"message":"success", "result":result}, status=200)
 
 class RestaurantFoodView(View):
     def get(self, request, restaurant_id):
         try:
-            foods = []
             foods_queryset = Restaurant.objects.get(id=restaurant_id).foods.all()
-            
+            foods          = []
+            prices = []
+
             for food_instance in foods_queryset:
-                images = []
+                prices.append(food_instance.price)
                 images_queryset = Image.objects.filter(food=food_instance)
+                images = []
+
                 for image_instance in images_queryset:
                     images.append(image_instance.image_url)
+  
+
                 food = {
                     "id":food_instance.id,
                     "name":food_instance.name,
@@ -63,8 +75,14 @@ class RestaurantFoodView(View):
                     "images":images,
                 }
                 foods.append(food)
+
+            average_price = sum(prices) / len(prices)
+            result = {
+                "foods":foods,
+                "average_price" : average_price
+            }
             
-            return JsonResponse({"message":"success", "result":foods}, status=200)
+            return JsonResponse({"message":"success", "result":result}, status=200)
 
         except Exception as e:
             print(e)
@@ -74,11 +92,20 @@ class RestaurantFoodView(View):
 class RestaurantReviewView(View):
     def get(self, request, restaurant_id):
         try:
-            reviews_queryset = Restaurant.objects.get(id=restaurant_id).review_set.all()
-            average          = reviews_queryset.aggregate(Avg("rating"))["rating__avg"]
-            reviews          = []
+            UNIT_PER_PAGE = 5
+            limit            = int(request.GET.get("limit", 1)) * UNIT_PER_PAGE
+            rating_min = request.GET.get("rating_min", 0)
+            rating_max = request.GET.get("rating_max", 5)
 
-            for review_instance in reviews_queryset:
+            
+            restaurant_instance = Restaurant.objects.get(id=restaurant_id)
+            
+            reviews_queryset = restaurant_instance.review_set
+            # 평점순 -> 생성일자순 -> limit
+            filtered = reviews_queryset.filter(rating__gte = rating_min, rating__lte = rating_max).order_by("-created_at")[limit - UNIT_PER_PAGE : limit]
+            reviews  = []
+
+            for review_instance in filtered:
                 review = {
                     "user":{
                         "id":review_instance.user.id,
@@ -93,13 +120,7 @@ class RestaurantReviewView(View):
                 }
                 reviews.append(review)
 
-            result = {
-                "average" : average,
-                "reviews" : reviews,
-                "my_int" : 1
-            }
-
-            return JsonResponse({"message":"success", "result":result}, status=200)
+            return JsonResponse({"message":"success", "result":reviews}, status=200)
 
         except Exception as e:
             print(e)
@@ -185,6 +206,27 @@ class RestaurantReviewView(View):
             print(e.__class__)
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
 
+class RestaurantFoodImageView(View):
+    def get(self, request, restaurant_id):
+        try:
+            foods_queryset = Restaurant.objects.get(id=restaurant_id).foods.all()
+            images = []
+
+            for food_instance in foods_queryset:
+                
+                images_queryset = Image.objects.filter(food=food_instance)
+                for image_instance in images_queryset:
+                    images.append(image_instance.image_url)
+            
+            return JsonResponse({"message":"success", "result":images}, status=200)
+
+        except Exception as e:
+            print(e)
+            print(e.__class__)
+            return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
+            
+
+
 class WishListView(View):
     # @ConfirmUser
     def post(self, request, restaurant_id):
@@ -192,18 +234,15 @@ class WishListView(View):
             print(request)
             # token에 대한 유저
             # user_instance = request.user
-            # 1. 1번 유저
             user_instance = User.objects.get(id=1)
-            # 2. 레스토랑 가져오기
             restaurant_instance = Restaurant.objects.get(id=restaurant_id)
-            # 3. DB에 없으면, 추가.
+            print(restaurant_instance.name)
+            print(user_instance.wishlist_restaurants.all().exists())
             if not user_instance.wishlist_restaurants.all().exists():
                 user_instance.wishlist_restaurants.add(restaurant_instance)
-            # 이미 있으면, 에러 던짐
             else:
                 return JsonResponse({"message":"ALREADY_EXISTS"}, status=400)
             
-            # 4. 정상 : success 
             return JsonResponse({"message":"success"}, status=201)
 
         except Exception as e:

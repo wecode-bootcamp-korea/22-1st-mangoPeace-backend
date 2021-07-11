@@ -138,3 +138,27 @@ CORS_ALLOW_HEADERS = (
     'x-requested-with',
 		#만약 허용해야할 추가적인 헤더키가 있다면?(사용자정의 키) 여기에 추가하면 됩니다.
 )
+
+# sql logging
+
+# LOGGING = {
+#     'version': 1,
+#     'filters': {
+#         'require_debug_true': {
+#             '()': 'django.utils.log.RequireDebugTrue',
+#         }
+#     },
+#     'handlers': {
+#         'console': {
+#             'level': 'DEBUG',
+#             'filters': ['require_debug_true'],
+#             'class': 'logging.StreamHandler',
+#         }
+#     },
+#     'loggers': {
+#         'django.db.backends': {
+#             'level': 'DEBUG',
+#             'handlers': ['console'],
+#         }
+#     }
+# }

@@ -14,9 +14,6 @@ import my_settings
 
 from users.models           import User
 
-# 유저 위시리스트는 다른 View에다 해야함.
-# 토큰 유효기간 하고 싶다.
-
 class SignupView(View):
     def post(self, request):
         try:
@@ -106,7 +103,7 @@ class UserView(View):
         for w in wish_list_queryset:
             print(w)
         user = {
-            "full_name":user_instance.full_name,
+            "nickname":user_instance.nickname,
             "email":user_instance.email,
             "profile_url":user_instance.profile_url,
         }
