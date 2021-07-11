@@ -38,7 +38,7 @@ class Restaurant(TimeStampModel):
         db_table = "restaurants"
 
 class Food(TimeStampModel):
-    restaurant = ForeignKey(Restaurant, on_delete=CASCADE)
+    restaurant = ForeignKey(Restaurant, on_delete=CASCADE, related_name="foods")
     name       = CharField(max_length=45)
     price      = DecimalField(max_digits=10, decimal_places=2)
 
@@ -46,7 +46,7 @@ class Food(TimeStampModel):
         db_table = "foods"
 
 class Image(Model):
-    food      = ForeignKey(Food, on_delete=CASCADE)
+    food      = ForeignKey(Food, on_delete=CASCADE, related_name="images")
     image_url = URLField(max_length=2000)
 
     class Meta():
