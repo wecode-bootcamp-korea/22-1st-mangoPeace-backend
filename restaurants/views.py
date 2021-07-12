@@ -19,13 +19,26 @@ class RestaurantDetailView(View):
     def get(self, request, restaurant_id):
         try:
             restaurant_instance = Restaurant.objects.get(id=restaurant_id)
-            # 임시 유저. 원래는 토큰으로.  
-            fake_user_instance = User.objects.get(id=1)
-            is_wished = fake_user_instance.wishlist_restaurants.filter(id=restaurant_id).exists()
+            fake_user_instance  = User.objects.get(id=1)
+            is_wished           = fake_user_instance.wishlist_restaurants.filter(id=restaurant_id).exists()
 
-            reviews_queryset = Restaurant.objects.get(id=restaurant_id).review_set.all()
-            average_rating   = reviews_queryset.aggregate(Avg("rating"))["rating__avg"]
-            review_count     = Restaurant.objects.get(id=restaurant_id).review_set.all().count()
+            reviews_queryset          = restaurant_instance.review_set.all()
+            average_rating            = reviews_queryset.aggregate(Avg("rating"))["rating__avg"]
+            review_total_count        = reviews_queryset.count()
+            review_rating_one_count   = reviews_queryset.filter(rating=1).count()
+            review_rating_two_count   = reviews_queryset.filter(rating=2).count()
+            review_rating_three_count = reviews_queryset.filter(rating=3).count()
+            review_rating_four_count  = reviews_queryset.filter(rating=4).count()
+            review_rating_five_count  = reviews_queryset.filter(rating=5).count()
+
+            review_count = {
+                "total" : review_total_count,
+                "rating_one" : review_rating_one_count,
+                "rating_two" : review_rating_two_count,
+                "rating_three" : review_rating_three_count,
+                "rating_four" : review_rating_four_count,
+                "rating_five" : review_rating_five_count,
+            }
 
         except Restaurant.DoesNotExist:
             return JsonResponse({"message":"RESTAURANT_NOT_EXIST"}, status=400)        
@@ -110,7 +123,7 @@ class RestaurantReviewView(View):
                         "id":review_instance.user.id,
                         "nickname":review_instance.user.nickname,
                         "profile_image":review_instance.user.profile_url if hasattr(review_instance.user, "profile_url") else None,
-                        "review_count":review_instance.user.reviewed_restaurants.count()
+                        # "review_count":review_instance.user.reviewed_restaurants.count()
                     },
                     "id":review_instance.id,
                     "content" : review_instance.content,
