@@ -5,9 +5,6 @@ import datetime
 
 from django.views           import View
 from django.http            import JsonResponse
-from django.db.utils        import DataError
-
-from json.decoder           import JSONDecodeError
 
 import my_settings
 from users.models           import User
@@ -33,13 +30,7 @@ class SignInView(View):
             return JsonResponse({"message":"success", "access_token":access_token}, status=200)
         
         except User.DoesNotExist:
-            return JsonResponse({"message":"USER_NOT_EXIST"}, status=400)        
+            return JsonResponse({"message":"USER_NOT_EXIST"}, status=404)        
 
-        except JSONDecodeError:
-            return JsonResponse({"message":"JSON_DECODE_ERROR"}, status=400)        
-        
         except KeyError:
-            return JsonResponse({"message":"KEY_ERROR"}, status=400)        
-        
-        except DataError:
-            return JsonResponse({"message": "DATA_ERROR"}, status=400)
+            return JsonResponse({"message":"KEY_ERROR"}, status=400)
