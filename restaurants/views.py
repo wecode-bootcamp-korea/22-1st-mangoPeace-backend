@@ -1,9 +1,6 @@
 import json
-from re import UNICODE
-import jwt
 
 from json.decoder import JSONDecodeError
-from decimal      import Decimal
 
 from django.http import JsonResponse
 from django.views import View
@@ -13,32 +10,42 @@ from django.db.models import Avg
 
 from users.utils import ConfirmUser
 from users.models import Review, User
-from restaurants.models import Food, Image, Restaurant
+from restaurants.models import Image, Restaurant
 
 class RestaurantDetailView(View):
+    @ConfirmUser
     def get(self, request, restaurant_id):
         try:
-            restaurant_instance = Restaurant.objects.get(id=restaurant_id)
-            fake_user_instance  = User.objects.get(id=1)
-            is_wished           = fake_user_instance.wishlist_restaurants.filter(id=restaurant_id).exists()
+            restaurant = Restaurant.objects.get(id=restaurant_id)
+            user       = request.user
+            is_wished  = user.wishlist_restaurants.filter(id=restaurant_id).exists() if user else False
 
-            reviews_queryset          = restaurant_instance.review_set.all()
-            average_rating            = reviews_queryset.aggregate(Avg("rating"))["rating__avg"]
-            review_total_count        = reviews_queryset.count()
-            review_rating_one_count   = reviews_queryset.filter(rating=1).count()
-            review_rating_two_count   = reviews_queryset.filter(rating=2).count()
-            review_rating_three_count = reviews_queryset.filter(rating=3).count()
-            review_rating_four_count  = reviews_queryset.filter(rating=4).count()
-            review_rating_five_count  = reviews_queryset.filter(rating=5).count()
-
-            review_count = {
-                "total" : review_total_count,
-                "rating_one" : review_rating_one_count,
-                "rating_two" : review_rating_two_count,
-                "rating_three" : review_rating_three_count,
-                "rating_four" : review_rating_four_count,
-                "rating_five" : review_rating_five_count,
+            reviews                   = restaurant.review_set.all()
+            average_rating            = reviews.aggregate(Avg("rating"))["rating__avg"]
+            review_count              = {
+                "total" : reviews.count(),
+                "rating_one" : reviews.filter(rating=1).count(),
+                "rating_two" : reviews.filter(rating=2).count(),
+                "rating_three" : reviews.filter(rating=3).count(),
+                "rating_four" : reviews.filter(rating=4).count(),
+                "rating_five" : reviews.filter(rating=5).count(),
             }
+
+            result = {
+            "id":restaurant.id,
+            "sub_category": restaurant.sub_category.name,
+            "name": restaurant.name,
+            "address": restaurant.address,
+            "phone_number": restaurant.phone_number,
+            "coordinate": restaurant.coordinate,
+            "open_time": restaurant.open_time,
+            "updated_at": restaurant.updated_at,
+            "is_wished" : is_wished,
+            "review_count" : review_count,
+            "average_rating" : average_rating,
+            }
+
+            return JsonResponse({"message":"success", "result":result}, status=200)
 
         except Restaurant.DoesNotExist:
             return JsonResponse({"message":"RESTAURANT_NOT_EXIST"}, status=400)        
@@ -47,23 +54,6 @@ class RestaurantDetailView(View):
             print(e)
             print(e.__class__)
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
-        
-        else:
-            result = {
-            "id":restaurant_instance.id,
-            "sub_category": restaurant_instance.sub_category.name,
-            "name": restaurant_instance.name,
-            "address": restaurant_instance.address,
-            "phone_number": restaurant_instance.phone_number,
-            "coordinate": restaurant_instance.coordinate,
-            "open_time": restaurant_instance.open_time,
-            "updated_at": restaurant_instance.updated_at,
-            "is_wished" : is_wished,
-            "review_count" : review_count,
-            "average_rating" : average_rating,
-        }
-
-            return JsonResponse({"message":"success", "result":result}, status=200)
 
 class RestaurantFoodView(View):
     def get(self, request, restaurant_id):
