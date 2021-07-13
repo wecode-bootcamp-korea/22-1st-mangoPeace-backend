@@ -17,10 +17,44 @@ from restaurants.models import Food, Image, Restaurant
 class RestaurantDetailView(View):
     def get(self, request, restaurant_id):
         try:
+            print(restaurant_id)
             restaurant_instance = Restaurant.objects.get(id=restaurant_id)
-            # 임시 유저. 원래는 토큰으로.  
-            fake_user_instance = User.objects.get(id=1)
-            is_wished = fake_user_instance.wishlist_restaurants.filter(id=restaurant_id).exists()
+            fake_user_instance  = User.objects.get(id=1)
+            is_wished           = fake_user_instance.wishlist_restaurants.filter(id=restaurant_id).exists()
+
+            reviews_queryset          = restaurant_instance.review_set.all()
+            average_rating            = reviews_queryset.aggregate(Avg("rating"))["rating__avg"]
+            review_total_count        = reviews_queryset.count()
+
+            review_rating_one_count   = reviews_queryset.filter(rating=1).count()
+            review_rating_two_count   = reviews_queryset.filter(rating=2).count()
+            review_rating_three_count = reviews_queryset.filter(rating=3).count()
+            review_rating_four_count  = reviews_queryset.filter(rating=4).count()
+            review_rating_five_count  = reviews_queryset.filter(rating=5).count()
+
+            review_count = {
+                "total" : review_total_count,
+                "rating_one" : review_rating_one_count,
+                "rating_two" : review_rating_two_count,
+                "rating_three" : review_rating_three_count,
+                "rating_four" : review_rating_four_count,
+                "rating_five" : review_rating_five_count,
+            }
+            result = {
+            "id":restaurant_instance.id,
+            "sub_category": restaurant_instance.sub_category.name,
+            "name": restaurant_instance.name,
+            "address": restaurant_instance.address,
+            "phone_number": restaurant_instance.phone_number,
+            "coordinate": restaurant_instance.coordinate,
+            "open_time": restaurant_instance.open_time,
+            "updated_at": restaurant_instance.updated_at,
+            "is_wished" : is_wished,
+            "review_count" : review_count,
+            "average_rating" : average_rating,
+        }
+
+            return JsonResponse({"message":"success", "result":result}, status=200)
 
         except Restaurant.DoesNotExist:
             return JsonResponse({"message":"RESTAURANT_NOT_EXIST"}, status=400)        
@@ -30,21 +64,7 @@ class RestaurantDetailView(View):
             print(e.__class__)
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
         
-        else:
-            restaurant = {
-            "id":restaurant_instance.id,
-            "sub_category": restaurant_instance.sub_category.name,
-            "name": restaurant_instance.name,
-            "address": restaurant_instance.address,
-            "phone_number": restaurant_instance.phone_number,
-            "coordinate": restaurant_instance.coordinate,
-            "open_time": restaurant_instance.open_time,
-            "updated_at": restaurant_instance.updated_at,
-            "is_wished" : is_wished
-        }
-
-            return JsonResponse({"message":"success", "result":restaurant}, status=200)
-
+        
 class RestaurantFoodView(View):
     def get(self, request, restaurant_id):
         try:
@@ -52,15 +72,10 @@ class RestaurantFoodView(View):
             foods_queryset = Restaurant.objects.get(id=restaurant_id).foods.all()
             
             for food_instance in foods_queryset:
-                images = []
-                images_queryset = Image.objects.filter(food=food_instance)
-                for image_instance in images_queryset:
-                    images.append(image_instance.image_url)
                 food = {
                     "id":food_instance.id,
                     "name":food_instance.name,
                     "price":food_instance.price,
-                    "images":images,
                 }
                 foods.append(food)
             
@@ -71,20 +86,45 @@ class RestaurantFoodView(View):
             print(e.__class__)
             return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
 
+class RestaurantFoodImageView(View):
+    def get(self, request, restaurant_id):
+        try:
+            foods  = Restaurant.objects.get(id=restaurant_id).foods.all()
+            image_list = []
+
+            for f in foods:
+                images = Image.objects.filter(food=f)
+                
+                for i in images:
+                    image_list.append(i.image_url)
+            
+            return JsonResponse({"message":"success", "result":image_list}, status=200)
+
+        except Restaurant.DoesNotExist:
+            return JsonResponse({"message":"RESTAURANT_NOT_EXIST"}, status=404)
+
 class RestaurantReviewView(View):
     def get(self, request, restaurant_id):
         try:
-            reviews_queryset = Restaurant.objects.get(id=restaurant_id).review_set.all()
-            average          = reviews_queryset.aggregate(Avg("rating"))["rating__avg"]
-            reviews          = []
+            UNIT_PER_PAGE = 10
+            limit         = int(request.GET.get("limit", 1)) * UNIT_PER_PAGE
+            rating_min    = request.GET.get("rating-min", 0)
+            rating_max    = request.GET.get("rating-max", 5)
+            
+            restaurant_instance = Restaurant.objects.get(id=restaurant_id)
+            
+            reviews_queryset = restaurant_instance.review_set
+            # 평점순 -> 생성일자순 -> limit
+            filtered = reviews_queryset.filter(rating__gte = rating_min, rating__lte = rating_max).order_by("-created_at")[limit - UNIT_PER_PAGE : limit]
+            reviews  = []
 
-            for review_instance in reviews_queryset:
+            for review_instance in filtered:
                 review = {
                     "user":{
                         "id":review_instance.user.id,
                         "nickname":review_instance.user.nickname,
                         "profile_image":review_instance.user.profile_url if hasattr(review_instance.user, "profile_url") else None,
-                        "review_count":review_instance.user.reviewed_restaurants.count()
+                        # "review_count":review_instance.user.reviewed_restaurants.count()
                     },
                     "id":review_instance.id,
                     "content" : review_instance.content,
@@ -93,12 +133,7 @@ class RestaurantReviewView(View):
                 }
                 reviews.append(review)
 
-            result = {
-                "average" : average,
-                "reviews" : reviews,
-            }
-
-            return JsonResponse({"message":"success", "result":result}, status=200)
+            return JsonResponse({"message":"success", "result":reviews}, status=200)
 
         except Exception as e:
             print(e)

@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls       import path
 
 from restaurants.views import RestaurantFoodImageView, RestaurantFoodView, RestaurantReviewView, RestaurantDetailView, WishListView
 
