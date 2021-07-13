@@ -110,34 +110,25 @@ class RestaurantReviewView(View):
             rating_min    = request.GET.get("rating-min", 0)
             rating_max    = request.GET.get("rating-max", 5)
             
-            restaurant_instance = Restaurant.objects.get(id=restaurant_id)
-            
-            reviews_queryset = restaurant_instance.review_set
-            # 평점순 -> 생성일자순 -> limit
-            filtered = reviews_queryset.filter(rating__gte = rating_min, rating__lte = rating_max).order_by("-created_at")[limit - UNIT_PER_PAGE : limit]
-            reviews  = []
+            restaurant  = Restaurant.objects.get(id=restaurant_id)
+            reviews     = restaurant.review_set.filter(rating__gte = rating_min, rating__lte = rating_max).order_by("-created_at")[limit - UNIT_PER_PAGE : limit]
+            review_list = []
 
-            for review_instance in filtered:
+            for r in reviews:
                 review = {
                     "user":{
-                        "id":review_instance.user.id,
-                        "nickname":review_instance.user.nickname,
-                        "profile_image":review_instance.user.profile_url if hasattr(review_instance.user, "profile_url") else None,
-                        # "review_count":review_instance.user.reviewed_restaurants.count()
+                        "id":r.user.id,
+                        "nickname":r.user.nickname,
+                        "profile_image":r.user.profile_url if hasattr(r.user, "profile_url") else None,
                     },
-                    "id":review_instance.id,
-                    "content" : review_instance.content,
-                    "rating":review_instance.rating,
-                    "created_at":review_instance.created_at,
+                    "id":r.id,
+                    "content" : r.content,
+                    "rating":r.rating,
+                    "created_at":r.created_at,
                 }
-                reviews.append(review)
+                review_list.append(review)
 
-            return JsonResponse({"message":"success", "result":reviews}, status=200)
-
-        except Exception as e:
-            print(e)
-            print(e.__class__)
-            return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
+            return JsonResponse({"message":"success", "result":review_list}, status=200)
 
         except ValueError:
             return JsonResponse({"message":"VALUE_ERROR"}, status=400)
@@ -153,13 +144,13 @@ class RestaurantReviewView(View):
             # token에 대한 유저
             # user_instance = request.user
             user_instance = User.objects.get(id=1)
-            restaurant_instance = Restaurant.objects.get(id=restaurant_id)
+            restaurant = Restaurant.objects.get(id=restaurant_id)
             content = data["content"]
             rating = data["rating"]
 
             Review.objects.create(
                 user=user_instance,
-                restaurant=restaurant_instance,
+                restaurant=restaurant,
                 content = content,
                 rating=rating
             )
@@ -171,11 +162,6 @@ class RestaurantReviewView(View):
 
         except DataError:
             return JsonResponse({"message":"DATA_ERROR"}, status=400)
-
-        except Exception as e:
-            print(e)
-            print(e.__class__)
-            return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
     
 class ReviewView(View):
     # @ConfirmUser
