@@ -24,10 +24,10 @@ class SignupView(View):
             if not User.validate(data):
                 return JsonResponse({"message":"VALIDATION_ERROR"}, status=401)        
 
-            nickname     = data["nickname"]
-            email        = data["email"]
-            password     = data["password"]
-            phone_number = data["phone_number"]
+            nickname        = data["nickname"]
+            email           = data["email"]
+            password        = data["password"]
+            phone_number    = data["phone_number"]
             hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
 
             User.objects.create(
