@@ -6,7 +6,7 @@ from restaurants.models import Image, Restaurant
 class RestaurantFoodImageView(View):
     def get(self, request, restaurant_id):
         try:
-            foods  = Restaurant.objects.get(id=restaurant_id).foods.all()
+            foods      = Restaurant.objects.get(id=restaurant_id).foods.all()
             image_list = []
 
             for f in foods:
