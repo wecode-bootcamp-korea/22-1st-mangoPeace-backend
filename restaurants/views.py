@@ -20,17 +20,15 @@ class RestaurantDetailView(View):
             restaurant_instance = Restaurant.objects.get(id=restaurant_id)
             fake_user_instance  = User.objects.get(id=1)
             is_wished           = fake_user_instance.wishlist_restaurants.filter(id=restaurant_id).exists()
-            
 
-            reviews_queryset   = restaurant_instance.review_set.all()
-            average_rating     = reviews_queryset.aggregate(Avg("rating"))["rating__avg"] if reviews_queryset.exists() else 0
-            review_total_count = reviews_queryset.count()
-
-            review_rating_one_count   = reviews_queryset.filter(rating=1).count()
-            review_rating_two_count   = reviews_queryset.filter(rating=2).count()
-            review_rating_three_count = reviews_queryset.filter(rating=3).count()
-            review_rating_four_count  = reviews_queryset.filter(rating=4).count()
-            review_rating_five_count  = reviews_queryset.filter(rating=5).count()
+            reviews                   = restaurant_instance.review_set.all()
+            average_rating            = reviews.aggregate(Avg("rating"))["rating__avg"] if reviews.exists() else 0
+            review_total_count        = reviews.count()
+            review_rating_one_count   = reviews.filter(rating=1).count()
+            review_rating_two_count   = reviews.filter(rating=2).count()
+            review_rating_three_count = reviews.filter(rating=3).count()
+            review_rating_four_count  = reviews.filter(rating=4).count()
+            review_rating_five_count  = reviews.filter(rating=5).count()
 
             review_count = {
                 "total" : review_total_count,
@@ -56,12 +54,7 @@ class RestaurantDetailView(View):
             return JsonResponse({"message":"success", "result":result}, status=200)
 
         except Restaurant.DoesNotExist:
-            return JsonResponse({"message":"RESTAURANT_NOT_EXIST"}, status=404)        
-        
-        except Exception as e:
-            print(e)
-            print(e.__class__)
-            return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
+            return JsonResponse({"message":"RESTAURANT_NOT_EXIST"}, status=404)
         
         
 class RestaurantFoodView(View):
