@@ -15,11 +15,12 @@ from users.models import Review, User
 from restaurants.models import Food, Image, Restaurant
 
 class RestaurantDetailView(View):
-    @ConfirmUser
+    # @ConfirmUser
     def get(self, request, restaurant_id):
         try:
             restaurant     = Restaurant.objects.get(id=restaurant_id)
-            is_wished      = request.user.wishlist_restaurants.filter(id=restaurant_id).exists() if request.user else False
+            user = User.objects.get(id=1)
+            is_wished      = user.wishlist_restaurants.filter(id=restaurant_id).exists()
             average_price  = Food.objects.filter(restaurant_id=restaurant.id).aggregate(Avg("price"))["price__avg"]
             reviews        = restaurant.review_set.all()
             average_rating = reviews.aggregate(Avg("rating"))["rating__avg"] if reviews.exists() else 0
@@ -51,28 +52,18 @@ class RestaurantDetailView(View):
 
         except Restaurant.DoesNotExist:
             return JsonResponse({"message":"RESTAURANT_NOT_EXIST"}, status=404)
-        
-        
-class RestaurantFoodView(View):
+
+class RestaurantFoodsView(View):
     def get(self, request, restaurant_id):
         try:
-            foods = []
-            foods_queryset = Restaurant.objects.get(id=restaurant_id).foods.all()
-            
-            for food_instance in foods_queryset:
-                food = {
-                    "id":food_instance.id,
-                    "name":food_instance.name,
-                    "price":food_instance.price,
-                }
-                foods.append(food)
-            
-            return JsonResponse({"message":"success", "result":foods}, status=200)
+            foods      = Food.objects.filter(restaurant_id=restaurant_id)
+            foods_list = [{"id":f.id, "name":f.name, "price":f.price, "images":[i.image_url for i in f.images.all()]} for f in foods]
+            result     = {"foods" : foods_list}
 
-        except Exception as e:
-            print(e)
-            print(e.__class__)
-            return JsonResponse({"message":"UNCAUGHT_ERROR"}, status=400)
+            return JsonResponse({"message":"success", "result":result}, status=200)
+
+        except Restaurant.DoesNotExist:
+            return JsonResponse({"message":"RESTAURANT_NOT_EXISTS"}, status=404) 
 
 class RestaurantFoodImageView(View):
     def get(self, request, restaurant_id):
@@ -93,39 +84,28 @@ class RestaurantFoodImageView(View):
 
 class RestaurantReviewView(View):
     def get(self, request, restaurant_id):
-        try:
-            offset        = int(request.GET.get("offset"))
-            limit         = int(request.GET.get("limit"))
-            print(offset, limit)
-            rating_min    = request.GET.get("rating-min", 0)
-            rating_max    = request.GET.get("rating-max", 5)
-            
-            restaurant  = Restaurant.objects.get(id=restaurant_id)
-            reviews     = restaurant.review_set.filter(rating__gte = rating_min, rating__lte = rating_max).order_by("-created_at")[offset : limit]
-            review_list = []
+        print(request)
+        offset        = int(request.GET.get("offset", 0))
+        limit         = int(request.GET.get("limit", 10))
+        rating_min    = request.GET.get("rating-min", 1)
+        rating_max    = request.GET.get("rating-max", 5)
+        reviews       = Review.objects.filter(restaurant_id=restaurant_id, rating__gte = rating_min, rating__lte = rating_max).order_by("-created_at")[offset : limit]
+        print(Review.objects.filter(restaurant_id=restaurant_id, rating__gte = rating_min, rating__lte = rating_max).order_by("-created_at"))
+        print(reviews)
+        review_list   = [{
+                "user":{
+                    "id":r.user.id,
+                    "nickname":r.user.nickname,
+                    "profile_image":r.user.profile_url,
+                    "review_count":r.user.reviewed_restaurants.count()
+                },
+                "id":r.id,
+                "content" : r.content,
+                "rating":r.rating,
+                "created_at":r.created_at,
+            } for r in reviews]
 
-            for r in reviews:
-                review = {
-                    "user":{
-                        "id":r.user.id,
-                        "nickname":r.user.nickname,
-                        "profile_image":r.user.profile_url if hasattr(r.user, "profile_url") else None,
-                    },
-                    "id":r.id,
-                    "content" : r.content,
-                    "rating":r.rating,
-                    "created_at":r.created_at,
-                }
-                review_list.append(review)
-
-            return JsonResponse({"message":"success", "result":review_list}, status=200)
-
-        except ValueError:
-            return JsonResponse({"message":"VALUE_ERROR"}, status=400)
-
-        except Restaurant.DoesNotExist:
-            return JsonResponse({"message":"RESTAURANT_NOT_EXISTS"}, status=404)
-
+        return JsonResponse({"message":"success", "result":review_list}, status=200)
 
     # @ConfirmUser
     def post(self, request, restaurant_id):
@@ -157,12 +137,13 @@ class ReviewView(View):
     # @ConfirmUser
     def patch(self, request, restaurant_id, review_id):
         try:
-            data = json.loads(request.body)
+            data    = json.loads(request.body)
             content = data["content"]
-            rating = data["rating"]
-            review_queryset = Review.objects.filter(id=review_id)
+            rating  = data["rating"]
+            reviews = Review.objects.filter(id=review_id)
             
-            review_queryset.update(content=content, rating=rating, updated_at=timezone.now())
+            print(content, rating, reviews)
+            reviews.update(content=content, rating=rating, updated_at=timezone.now())
 
             return JsonResponse({"message":"success"}, status=201)
 
