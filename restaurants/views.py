@@ -19,7 +19,8 @@ class RestaurantDetailView(View):
     def get(self, request, restaurant_id):
         try:
             restaurant     = Restaurant.objects.get(id=restaurant_id)
-            user = User.objects.get(id=1)
+            # 임시 유저
+            user           = User.objects.get(id=1)
             is_wished      = user.wishlist_restaurants.filter(id=restaurant_id).exists()
             average_price  = Food.objects.filter(restaurant_id=restaurant.id).aggregate(Avg("price"))["price__avg"]
             reviews        = restaurant.review_set.all()
@@ -58,9 +59,8 @@ class RestaurantFoodsView(View):
         try:
             foods      = Food.objects.filter(restaurant_id=restaurant_id)
             foods_list = [{"id":f.id, "name":f.name, "price":f.price, "images":[i.image_url for i in f.images.all()]} for f in foods]
-            result     = {"foods" : foods_list}
 
-            return JsonResponse({"message":"success", "result":result}, status=200)
+            return JsonResponse({"message":"success", "result":foods_list}, status=200)
 
         except Restaurant.DoesNotExist:
             return JsonResponse({"message":"RESTAURANT_NOT_EXISTS"}, status=404) 
@@ -187,7 +187,7 @@ class ReviewView(View):
 
 
 class WishListView(View):
-    @ConfirmUser
+    # @ConfirmUser
     def post(self, request, restaurant_id):
         try:
             print(request.user)
@@ -204,7 +204,7 @@ class WishListView(View):
         except Restaurant.DoesNotExist:
             return JsonResponse({"message":"RESTAURANT_NOT_EXISTS"}, status=404)   
         
-    @ConfirmUser
+    # @ConfirmUser
     def delete(self, request, restaurant_id):
         try:
             restaurant = Restaurant.objects.get(id=restaurant_id)
