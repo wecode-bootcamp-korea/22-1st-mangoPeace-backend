@@ -7,7 +7,7 @@ from django.db.models   import Avg
 from django.utils       import timezone
 
 from restaurants.models import Restaurant, Food, SubCategory
-from users.utils        import ConfirmUser
+from users.utils        import ConfirmUser, LooseConfirmUser
 from users.models       import Review
 
 class PopularRestaurantView(View):
@@ -34,7 +34,7 @@ class PopularRestaurantView(View):
             return JsonResponse({"message":"RESTAURANT_NOT_EXIST"}, status=404)
 
 class RestaurantDetailView(View):
-    @ConfirmUser
+    @LooseConfirmUser
     def get(self, request, restaurant_id):
         try:
             restaurant = Restaurant.objects.get(id=restaurant_id)
@@ -185,6 +185,7 @@ class ReviewView(View):
 
         except DataError:
             return JsonResponse({"message":"DATA_ERROR"}, status=400)
+    @ConfirmUser
     def delete(self, request, restaurant_id, review_id):
         try:
             review = Review.objects.get(id=review_id, user_id=request.user.id)
