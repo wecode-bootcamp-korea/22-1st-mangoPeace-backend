@@ -84,14 +84,11 @@ class RestaurantFoodImageView(View):
 
 class RestaurantReviewView(View):
     def get(self, request, restaurant_id):
-        print(request)
         offset        = int(request.GET.get("offset", 0))
         limit         = int(request.GET.get("limit", 10))
         rating_min    = request.GET.get("rating-min", 1)
         rating_max    = request.GET.get("rating-max", 5)
-        reviews       = Review.objects.filter(restaurant_id=restaurant_id, rating__gte = rating_min, rating__lte = rating_max).order_by("-created_at")[offset : limit]
-        print(Review.objects.filter(restaurant_id=restaurant_id, rating__gte = rating_min, rating__lte = rating_max).order_by("-created_at"))
-        print(reviews)
+        reviews       = Review.objects.filter(restaurant_id=restaurant_id, rating__gte = rating_min, rating__lte = rating_max).order_by("-created_at")[offset : offset + limit]
         review_list   = [{
                 "user":{
                     "id":r.user.id,
