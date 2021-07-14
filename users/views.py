@@ -1,5 +1,5 @@
 import json
-from users.utils import ConfirmUser
+from restaurants.models import Image
 import bcrypt
 import jwt
 import datetime
@@ -7,11 +7,13 @@ import datetime
 from django.views           import View
 from django.http            import JsonResponse
 from django.db.utils        import DataError, IntegrityError
+from django.db.models       import Avg
 
 from json.decoder           import JSONDecodeError
 
 import my_settings
-from users.models           import User
+from users.models           import Review, User
+from users.utils            import ConfirmUser
 
 class SignInView(View):
     def post(self,request):
@@ -77,22 +79,26 @@ class SignupView(View):
         except IntegrityError:
             return JsonResponse({"message": "INTEGRITY_ERROR"}, status=400)
 
-
 # ! : PR
 class UserView(View):
     @ConfirmUser
     def get(self, request):
-        user_instance = request.user 
-        wish_list     = []
-        wish_list_queryset = user_instance.wishlist_restaurants.all()
+        wish_list  = [{
+            "name" : restaurant.name,
+            "address" : restaurant.address,
+            "sub_category" : restaurant.sub_category.name,
+            "average_rating" : Review.objects.filter(restaurant_id=restaurant.id).aggregate(Avg("rating"))["rating__avg"] 
+            if Review.objects.filter(restaurant_id=restaurant.id) else 0,
+            "is_wished" : True,
+            "food_image" : Image.objects.filter(food__restaurant__id=restaurant.id).first().image_url
+            
+        }for restaurant in request.user.wishlist_restaurants.all()]
 
-        for wish in wish_list_queryset:
-            wish_list.append(wish)
-
-        user = {
-            "nickname":user_instance.nickname,
-            "email":user_instance.email,
-            "profile_url":user_instance.profile_url,
+        result = {
+            "nickname":request.user.nickname,
+            "email":request.user.email,
+            "profile_url":request.user.profile_url,
+            "wish_list" : wish_list,
         }
         
-        return JsonResponse({"message":"success","result":user}, status=200)
+        return JsonResponse({"message":"success","result":result}, status=200)
