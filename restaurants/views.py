@@ -184,7 +184,7 @@ class ReviewView(View):
 
 
 class WishListView(View):
-    # @ConfirmUser
+    @ConfirmUser
     def post(self, request, restaurant_id):
         try:
             print(request.user)
@@ -201,7 +201,7 @@ class WishListView(View):
         except Restaurant.DoesNotExist:
             return JsonResponse({"message":"RESTAURANT_NOT_EXISTS"}, status=404)   
         
-    # @ConfirmUser
+    @ConfirmUser
     def delete(self, request, restaurant_id):
         try:
             restaurant = Restaurant.objects.get(id=restaurant_id)

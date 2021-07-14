@@ -1,4 +1,6 @@
 import json
+
+from django.db.models.aggregates import Avg
 from users.utils import ConfirmUser
 import bcrypt
 import jwt
@@ -88,20 +90,26 @@ class SignInView(View):
 
             return JsonResponse({"message":"success", "access_token":access_token}, status=200)
 
-# @ConfirmUser
 class UserView(View):
+    @ConfirmUser
     def get(self, request):
-        user_instance = request.user 
-        wish_list     = []
-        wish_list_queryset = user_instance.wishlist_restaurants.all()
+        user_instance      = request.user 
+        wish_lists = user_instance.wishlist_restaurants.all()
+        wish_list     = [{
+            "name" : restaurant.name,
+            "address" : restaurant.address,
+            "sub_category" : restaurant.sub_category.name,
+            "average_rating" : restaurant.review_set.aggregate(Avg("rating"))["rating__avg"] if restaurant.review_set.all().exists() else 0,
+            "is_wished" : True,
 
-        for wish in wish_list_queryset:
-            wish_list.append(wish)
+        }for restaurant in wish_lists]
+        print(wish_list)
 
         user = {
             "nickname":user_instance.nickname,
             "email":user_instance.email,
             "profile_url":user_instance.profile_url,
+            "wish_list" : wish_list
         }
         
         return JsonResponse({"message":"success","result":user}, status=200)
