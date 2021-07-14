@@ -13,12 +13,8 @@ from users.models       import Review
 class PopularRestaurantView(View):
     def get(self, request):
         try:
-            dict_sort={
-                "average_rating" : "-filtering"
-            }
-            filtering = request.GET.get("filtering", None)
-            restaurants = Restaurant.objects.annotate(filtering=Avg("review__rating")).order_by(dict_sort[filtering])
-            
+            filtering       = request.GET.get("filtering", "average_rating")
+            restaurants     = Restaurant.objects.annotate(average_rating=Avg("review__rating")).order_by(filtering)
             restaurant_list = []
             
             for restaurant in restaurants: 
@@ -27,7 +23,7 @@ class PopularRestaurantView(View):
                     "category"          : restaurant.sub_category.category.name,
                     "restaurant_name"   : restaurant.name,
                     "address"           : restaurant.address,
-                    "rating"            : round(restaurant.filtering, 1),
+                    "rating"            : round(restaurant.average_rating, 1) if restaurant.average_rating else 0 ,
                     "image"             : restaurant.foods.all()[0].images.all()[0].image_url,
                     "restaurant_id"     : restaurant.id
                 })
@@ -218,3 +214,38 @@ class SubCategoryListView(View):
 
         except SubCategory.DoesNotExist:
             return JsonResponse({"message":"sub_category_NOT_EXIST"}, status=404)
+
+class TopListView(View):
+    def get(self, request):
+        try:
+            dic_sort={ 
+                "ordering" : "-filtering"
+            }
+            filtering = request.GET.get("filtering", "ordering")
+            sub_categorys = SubCategory.objects.all()          
+
+            for sub_category in sub_categorys:
+                restaurants = sub_category.restaurants.annotate(filtering=Avg("review__rating")).order_by(dic_sort[filtering])
+                restaurant_list = []
+ 
+                for restaurant in restaurants:
+                    restaurant_list.append({
+                            "name"          : restaurant.name,
+                            "address"       : restaurant.address,
+                            "content"       : restaurant.review_set.order_by('?')[0].content if restaurant.review_set.order_by('?') else "",
+                            "profile_url"   : restaurant.review_set.order_by('?')[0].user.profile_url if restaurant.review_set.order_by('?') else "",
+                            "nickname"      : restaurant.review_set.order_by('?')[0].user.nickname if restaurant.review_set.order_by('?') else "",
+                            "image"         : restaurant.foods.all()[0].images.all()[0].image_url if restaurant.review_set.order_by('?') else "",
+                            "rating"        : round(restaurant.filtering, 1) if restaurant.filtering else 0,
+                            "restaurant_id" : restaurant.id
+                        })
+
+                return JsonResponse({"message":"success", "result":restaurant_list}, status=200)
+
+        except Restaurant.DoesNotExist:
+            return JsonResponse({"message":"RESTAURANT_NOT_EXIST"}, status=404)
+
+        except Exception as e:
+            print(e)
+            print(e.__class__)
+            return JsonResponse({"message":"what>??"}, status=404)

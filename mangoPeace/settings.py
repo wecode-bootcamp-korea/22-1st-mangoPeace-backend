@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'users',
     'restaurants',
+    'filtering'
 ]
 
 MIDDLEWARE = [

@@ -1,11 +1,12 @@
 import json
+from users.utils import ConfirmUser
 import bcrypt
 import jwt
 import datetime
 
 from django.views           import View
 from django.http            import JsonResponse
-from django.db.utils        import DataError
+from django.db.utils        import DataError, IntegrityError
 
 from json.decoder           import JSONDecodeError
 
@@ -72,3 +73,26 @@ class SignupView(View):
         
         except DataError:
             return JsonResponse({"message": "DATA_ERROR"}, status=400)
+# ! : 추가
+        except IntegrityError:
+            return JsonResponse({"message": "INTEGRITY_ERROR"}, status=400)
+
+
+# ! : PR
+class UserView(View):
+    @ConfirmUser
+    def get(self, request):
+        user_instance = request.user 
+        wish_list     = []
+        wish_list_queryset = user_instance.wishlist_restaurants.all()
+
+        for wish in wish_list_queryset:
+            wish_list.append(wish)
+
+        user = {
+            "nickname":user_instance.nickname,
+            "email":user_instance.email,
+            "profile_url":user_instance.profile_url,
+        }
+        
+        return JsonResponse({"message":"success","result":user}, status=200)
