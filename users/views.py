@@ -1,4 +1,5 @@
 import json
+from restaurants.models import Image, Restaurant
 
 from django.db.models.aggregates import Avg
 from users.utils import ConfirmUser
@@ -93,23 +94,22 @@ class SignInView(View):
 class UserView(View):
     @ConfirmUser
     def get(self, request):
-        user_instance      = request.user 
-        wish_lists = user_instance.wishlist_restaurants.all()
-        wish_list     = [{
+        wishlists = request.user.wishlist_restaurants.all()
+        wishlist  = [{
             "name" : restaurant.name,
             "address" : restaurant.address,
             "sub_category" : restaurant.sub_category.name,
             "average_rating" : restaurant.review_set.aggregate(Avg("rating"))["rating__avg"] if restaurant.review_set.all().exists() else 0,
             "is_wished" : True,
-
-        }for restaurant in wish_lists]
-        print(wish_list)
+            "image" : Image.objects.get(id=restaurant.foods.first().images.first().id).image_url
+        }
+        for restaurant in wishlists]
 
         user = {
-            "nickname":user_instance.nickname,
-            "email":user_instance.email,
-            "profile_url":user_instance.profile_url,
-            "wish_list" : wish_list
+            "nickname":request.user.nickname,
+            "email":request.user.email,
+            "profile_url":request.user.profile_url,
+            "wishlist" : wishlist
         }
         
         return JsonResponse({"message":"success","result":user}, status=200)

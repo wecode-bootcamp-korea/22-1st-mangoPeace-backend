@@ -10,15 +10,17 @@ from django.db.utils import DataError
 from django.utils import timezone
 from django.db.models import Avg
 
-from users.utils import ConfirmUser
+from users.utils import ConfirmUser, YameConfirmUser
 from users.models import Review, User
 from restaurants.models import Food, Image, Restaurant
 
 class RestaurantDetailView(View):
-    # @ConfirmUser
+    @YameConfirmUser
     def get(self, request, restaurant_id):
         try:
             restaurant     = Restaurant.objects.get(id=restaurant_id)
+            if not request.user:
+                
             # 임시 유저
             user           = User.objects.get(id=1)
             is_wished      = user.wishlist_restaurants.filter(id=restaurant_id).exists()
