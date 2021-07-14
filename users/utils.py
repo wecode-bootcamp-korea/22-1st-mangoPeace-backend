@@ -45,7 +45,7 @@ class ConfirmUser:
         except User.DoesNotExist:
             return JsonResponse({"message":"USER_NOT_EXIST"}, status=404)
 
-class YameConfirmUser:
+class LooseConfirmUser:
     def __init__(self, func):
         self.func = func
     

@@ -10,12 +10,12 @@ from django.db.utils import DataError
 from django.utils import timezone
 from django.db.models import Avg
 
-from users.utils import ConfirmUser, YameConfirmUser
+from users.utils import ConfirmUser, LooseConfirmUser
 from users.models import Review, User
 from restaurants.models import Food, Image, Restaurant
 
 class RestaurantDetailView(View):
-    @YameConfirmUser
+    @LooseConfirmUser
     def get(self, request, restaurant_id):
         try:
             restaurant     = Restaurant.objects.get(id=restaurant_id)
@@ -189,8 +189,6 @@ class WishListView(View):
     @ConfirmUser
     def post(self, request, restaurant_id):
         try:
-            print(request.user)
-            print(request.user.id)
             restaurant = Restaurant.objects.get(id=restaurant_id)
 
             if request.user.wishlist_restaurants.filter(id=restaurant_id).exists():
