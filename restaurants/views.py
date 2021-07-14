@@ -19,11 +19,7 @@ class RestaurantDetailView(View):
     def get(self, request, restaurant_id):
         try:
             restaurant     = Restaurant.objects.get(id=restaurant_id)
-            if not request.user:
-                
-            # 임시 유저
-            user           = User.objects.get(id=1)
-            is_wished      = user.wishlist_restaurants.filter(id=restaurant_id).exists()
+            is_wished      = request.user.wishlist_restaurants.filter(id=restaurant_id).exists() if request.user else False
             average_price  = Food.objects.filter(restaurant_id=restaurant.id).aggregate(Avg("price"))["price__avg"]
             reviews        = restaurant.review_set.all()
             average_rating = reviews.aggregate(Avg("rating"))["rating__avg"] if reviews.exists() else 0
@@ -86,25 +82,29 @@ class RestaurantFoodImageView(View):
 
 class RestaurantReviewView(View):
     def get(self, request, restaurant_id):
-        offset        = int(request.GET.get("offset", 0))
-        limit         = int(request.GET.get("limit", 10))
-        rating_min    = request.GET.get("rating-min", 1)
-        rating_max    = request.GET.get("rating-max", 5)
-        reviews       = Review.objects.filter(restaurant_id=restaurant_id, rating__gte = rating_min, rating__lte = rating_max).order_by("-created_at")[offset : offset + limit]
-        review_list   = [{
-                "user":{
-                    "id":r.user.id,
-                    "nickname":r.user.nickname,
-                    "profile_image":r.user.profile_url,
-                    "review_count":r.user.reviewed_restaurants.count()
-                },
-                "id":r.id,
-                "content" : r.content,
-                "rating":r.rating,
-                "created_at":r.created_at,
-            } for r in reviews]
+        try:
+            offset        = int(request.GET.get("offset", 0))
+            limit         = int(request.GET.get("limit", 10))
+            rating_min    = request.GET.get("rating-min", 1)
+            rating_max    = request.GET.get("rating-max", 5)
+            reviews       = Review.objects.filter(restaurant_id=restaurant_id, rating__gte = rating_min, rating__lte = rating_max).order_by("-created_at")[offset : offset + limit]
+            review_list   = [{
+                    "user":{
+                        "id":r.user.id,
+                        "nickname":r.user.nickname,
+                        "profile_image":r.user.profile_url,
+                        "review_count":r.user.reviewed_restaurants.count()
+                    },
+                    "id":r.id,
+                    "content" : r.content,
+                    "rating":r.rating,
+                    "created_at":r.created_at,
+                } for r in reviews]
 
-        return JsonResponse({"message":"success", "result":review_list}, status=200)
+            return JsonResponse({"message":"success", "result":review_list}, status=200)
+
+        except ValueError:
+            return JsonResponse({"message":"VALUE_ERROR"}, status=400)
 
     # @ConfirmUser
     def post(self, request, restaurant_id):

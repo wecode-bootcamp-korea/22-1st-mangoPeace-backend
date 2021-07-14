@@ -52,16 +52,12 @@ class YameConfirmUser:
     def __call__(self, request, *args, **kwargs):
         try:
             access_token = request.headers.get("Authorization")
-            print(access_token)
             
-            if not access_token:
+            if access_token:
+                payload      = jwt.decode(jwt=access_token, key=my_settings.SECRET_KEY,  algorithms=my_settings.ALGORITHM)
+                request.user = User.objects.get(id=payload["id"])
+            else:
                 request.user = None
-                return self.func(self, request, *args, **kwargs)
-
-            payload      = jwt.decode(jwt=access_token, key=my_settings.SECRET_KEY,  algorithms=my_settings.ALGORITHM)
-            user         = User.objects.get(id=payload["id"])
-            request.user = user
-            print(user)
             
             return self.func(self, request, *args, **kwargs)
         
