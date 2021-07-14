@@ -23,7 +23,7 @@ class PopularRestaurantView(View):
                     "category"          : restaurant.sub_category.category.name,
                     "restaurant_name"   : restaurant.name,
                     "address"           : restaurant.address,
-                    "rating"            : round(restaurant.average_rating, 1) if restaurant.average_rating else 0 ,
+                    "rating"            : round(restaurant.average_rating, 1) if restaurant.average_rating else 0,
                     "image"             : restaurant.foods.all()[0].images.all()[0].image_url,
                     "restaurant_id"     : restaurant.id
                 })
@@ -39,7 +39,8 @@ class RestaurantDetailView(View):
         try:
             restaurant = Restaurant.objects.get(id=restaurant_id)
             is_wished  = request.user.wishlist_restaurants.filter(id=restaurant_id).exists() if request.user else False
-
+            # ! : 평균 가격
+            average_price  = Food.objects.filter(restaurant_id=restaurant_id).aggregate(Avg("price"))["price__avg"]
             reviews        = restaurant.review_set.all()
             average_rating = reviews.aggregate(Avg("rating"))["rating__avg"]
             review_count   = {
@@ -63,6 +64,7 @@ class RestaurantDetailView(View):
             "is_wished"      : is_wished,
             "review_count"   : review_count,
             "average_rating" : average_rating,
+            "average_price" : average_price,
             }
 
             return JsonResponse({"message":"SUCCESS", "result":result}, status=200)
@@ -185,6 +187,7 @@ class ReviewView(View):
 
         except DataError:
             return JsonResponse({"message":"DATA_ERROR"}, status=400)
+            
     @ConfirmUser
     def delete(self, request, restaurant_id, review_id):
         try:
@@ -219,7 +222,7 @@ class SubCategoryListView(View):
 class TopListView(View):
     def get(self, request):
         try:
-            dic_sort={ 
+            dic_sort={
                 "ordering" : "-filtering"
             }
             filtering = request.GET.get("filtering", "ordering")
